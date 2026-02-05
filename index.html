@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#e0f2fe">
+    <title>نظام ديون السيارات (Supabase)</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div id="login-screen" class="full-screen-overlay">
+        <div class="login-box">
+            <div class="fingerprint-container">
+                <div class="fingerprint-ring"></div>
+                <i class="fas fa-fingerprint fingerprint-icon" onclick="fingerprintAction()"></i>
+            </div>
+            
+            <div id="fingerprint-msg" class="moving-msg hidden-msg">
+                ⚠️ البصمة غير مفعلة حالياً
+            </div>
+
+            <h2 class="mt-20">نظام الديون</h2>
+            <p style="color:#64748b; margin-bottom:10px">أدخل الرمز السري</p>
+            
+            <input type="password" id="pin-input" placeholder="******" maxlength="6" pattern="\d*">
+            <button onclick="checkPin()" class="btn btn-primary full-width mt-10">دخول النظام</button>
+            <p id="login-error" class="error-msg"></p>
+        </div>
+        
+        <div id="welcome-msg" class="welcome-overlay hidden">
+            <h1>🎉 أهلاً وسهلاً 🎉</h1>
+        </div>
+    </div>
+
+    <header class="app-header">
+        <h1 id="page-title">إضافة دين</h1>
+        <div class="header-status">
+            <span id="online-status" class="status-indicator"></span>
+            <button id="settings-btn" onclick="showPage('settings')"><i class="fas fa-cog"></i></button>
+        </div>
+    </header>
+
+    <main id="main-container">
+
+        <section id="page-add" class="page active">
+            <div class="card">
+                <h3><i class="fas fa-user-plus"></i> بيانات الزبون</h3>
+                <div class="form-group">
+                    <label>اسم الزبون *</label>
+                    <input type="text" id="cust-name" placeholder="مثال: أحمد علي">
+                </div>
+                <div class="form-group">
+                    <label>نوع السيارة / التفاصيل *</label>
+                    <input type="text" id="cust-car" placeholder="مثال: سوناتا 2020 - رقم بغداد">
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف (واتساب) *</label>
+                    <input type="tel" id="cust-phone" placeholder="077...">
+                </div>
+                
+                <h3><i class="fas fa-images"></i> صور ومستمسكات</h3>
+                <div class="form-group">
+                    <label>رفع صور (يمكن تحديد أكثر من صورة)</label>
+                    <input type="file" id="cust-images" multiple accept="image/*" class="file-input-custom">
+                </div>
+
+                <h3><i class="fas fa-coins"></i> تفاصيل المبلغ</h3>
+                
+                <div class="form-group">
+                    <label>نوع العملة *</label>
+                    <div class="currency-selector">
+                        <input type="radio" id="curr-iqd" name="currency" value="IQD" checked>
+                        <label for="curr-iqd" class="radio-label">دينار عراقي (IQD)</label>
+                        
+                        <input type="radio" id="curr-usd" name="currency" value="USD">
+                        <label for="curr-usd" class="radio-label">دولار أمريكي ($)</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>المبلغ الكلي (الدين) *</label>
+                    <input type="number" id="cust-total" min="0" step="any">
+                </div>
+                <div class="form-group">
+                    <label>الواصل (الدفعة الأولى)</label>
+                    <input type="number" id="cust-paid" min="0" value="0" step="any">
+                </div>
+                <div class="form-group">
+                    <label>تم التدقيق من قبل</label>
+                    <input type="text" id="cust-checker">
+                </div>
+                <div class="form-group">
+                    <label>ملاحظات إضافية</label>
+                    <textarea id="cust-notes" rows="3"></textarea>
+                </div>
+                <button id="btn-add-customer" class="btn btn-success full-width" onclick="addCustomer()">حفظ البيانات</button>
+            </div>
+        </section>
+
+        <section id="page-customers" class="page">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-customers" placeholder="بحث بالاسم أو السيارة..." onkeyup="renderCustomers()">
+            </div>
+            <div id="customers-list" class="list-container"></div>
+        </section>
+
+        <section id="page-payments" class="page">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-payment-client" placeholder="بحث عن زبون للتسديد..." onkeyup="renderPaymentClients()">
+            </div>
+            <div id="payment-clients-list" class="list-container"></div>
+            
+            <div id="payment-form-modal" class="modal hidden">
+                <div class="modal-content">
+                    <span class="close" onclick="closePaymentModal()">&times;</span>
+                    <h3>إدارة الحساب</h3>
+                    <p id="pay-modal-info" class="modal-subtitle"></p>
+                    
+                    <div id="payment-inputs-area">
+                        <div class="form-group">
+                            <label>مبلغ التسديد</label>
+                            <input type="number" id="pay-amount" min="1" step="any" placeholder="أدخل المبلغ هنا">
+                        </div>
+                        <div class="form-group">
+                            <label>ملاحظة</label>
+                            <input type="text" id="pay-note" placeholder="مثال: قسط شهري">
+                        </div>
+                        
+                        <button class="btn btn-primary full-width mb-10" onclick="submitPayment()">
+                            <i class="fas fa-save"></i> حفظ التسديد
+                        </button>
+                    </div>
+
+                    <div id="print-options-area" class="hidden">
+                        <div class="alert-success mb-10">تم حفظ التسديد بنجاح!</div>
+                        
+                        <h4 style="color:var(--text); margin-bottom:5px">تحديد صور للطباعة (اختياري):</h4>
+                        <div id="payment-images-container" class="image-select-grid"></div>
+                        
+                        <button class="btn btn-secondary full-width mt-10" onclick="executePrint()">
+                            <i class="fas fa-print"></i> طباعة الفاتورة والصور
+                        </button>
+                        <button class="btn btn-danger full-width mt-10" onclick="closePaymentModal()">
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-details" class="page">
+            <div class="action-bar">
+                <button class="btn btn-small btn-secondary full-width" onclick="showPage('customers')">
+                    <i class="fas fa-arrow-right"></i> رجوع للقائمة
+                </button>
+            </div>
+            
+            <div class="card details-card" id="details-container"></div>
+            
+            <button class="btn btn-warning full-width mb-10" onclick="openEditModal()">
+                <i class="fas fa-edit"></i> تعديل البيانات
+            </button>
+
+            <h3 class="section-title">سجل الحركات</h3>
+            <div id="transactions-list" class="list-container"></div>
+            
+            <button class="btn btn-danger full-width mt-20" onclick="deleteCustomerConfirm()">
+                <i class="fas fa-trash"></i> حذف السجل نهائياً
+            </button>
+        </section>
+
+        <section id="page-settings" class="page">
+            <div class="card">
+                <h3>حالة الاتصال</h3>
+                <p id="sync-status" style="margin-bottom:10px">جاري التحقق...</p>
+                <button class="btn btn-primary full-width mb-10" onclick="forceSync()">🔄 مزامنة مع السحابة</button>
+                
+                <hr class="divider">
+                <h3>البيانات</h3>
+                <button class="btn btn-secondary full-width mb-10" onclick="exportData()">📥 تصدير نسخة احتياطية</button>
+                <div class="file-input-wrapper">
+                    <button class="btn btn-secondary full-width">📤 استعادة نسخة (JSON)</button>
+                    <input type="file" id="import-file" onchange="importData(this)">
+                </div>
+
+                <hr class="divider">
+                <h3>النظام</h3>
+                <button class="btn btn-danger full-width" onclick="logout()">🔒 تسجيل الخروج</button>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <span class="close" onclick="document.getElementById('edit-modal').classList.add('hidden')">&times;</span>
+            <h3>تعديل البيانات</h3>
+            
+            <div class="form-group">
+                <label>اسم الزبون</label>
+                <input type="text" id="edit-name">
+            </div>
+            <div class="form-group">
+                <label>نوع السيارة</label>
+                <input type="text" id="edit-car">
+            </div>
+            <div class="form-group">
+                <label>الهاتف</label>
+                <input type="tel" id="edit-phone">
+            </div>
+            
+            <div class="form-group">
+                <label>إدارة الصور</label>
+                <div id="edit-images-list" class="image-edit-grid"></div>
+                <label style="margin-top:10px">إضافة صور جديدة</label>
+                <input type="file" id="edit-new-images" multiple accept="image/*">
+            </div>
+
+            <div class="row" style="display:flex; gap:10px">
+                <div class="form-group full-width">
+                    <label>الدين الكلي</label>
+                    <input type="number" id="edit-total" step="any">
+                </div>
+                <div class="form-group full-width">
+                    <label>مجموع الواصل</label>
+                    <input type="number" id="edit-paid" step="any">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>ملاحظات</label>
+                <textarea id="edit-notes" rows="3"></textarea>
+            </div>
+
+            <button id="btn-save-edit" class="btn btn-success full-width" onclick="saveEditCustomer()">حفظ التعديلات</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" onclick="showPage('add'); return false;">
+            <i class="fas fa-plus-circle"></i>
+            <small>إضافة</small>
+        </a>
+        <a href="#" class="nav-item" onclick="showPage('customers'); return false;">
+            <i class="fas fa-users"></i>
+            <small>الزبائن</small>
+        </a>
+        <a href="#" class="nav-item" onclick="showPage('payments'); return false;">
+            <i class="fas fa-hand-holding-usd"></i>
+            <small>تسديد</small>
+        </a>
+    </nav>
+
+    <div id="print-area" class="print-only"></div>
+
+    <div id="toast" class="toast">تم التنفيذ</div>
+    <div id="loader" class="loader-overlay hidden">
+        <div class="loader"></div>
+        <p style="margin-top:10px; color:white">جاري المعالجة والمزامنة...</p>
+    </div>
+
+    <script>
+        // تسجيل Service Worker ليعمل التطبيق بدون إنترنت
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(() => console.log('Service Worker Ready'))
+                    .catch((err) => console.log('SW Failed', err));
+            });
+        }
+    </script>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
