@@ -1,0 +1,21 @@
+{
+  "name": "نظام ديون السيارات",
+  "short_name": "الديون",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#e0f2fe",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3202/3202926.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3202/3202926.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
