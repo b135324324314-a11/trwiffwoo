@@ -1,6 +1,6 @@
 // --- إعدادات Supabase ---
-const SUPABASE_URL = "ضع رابط مشروعك هنا";
-const SUPABASE_KEY = "ضع المفتاح العام (Anon Key) هنا";
+const SUPABASE_URL = "https://hufvpwlchyjdsxwthulm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ljnjvVN8cfjzG5XBj0BeGA_-ZAXsf2y";
 
 // تهيئة Supabase Client
 const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
