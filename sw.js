@@ -1,4 +1,4 @@
-const CACHE_NAME = 'debt-app-v2-sky';
+const CACHE_NAME = 'debt-app-v3-print-fix'; // تم تحديث الإصدار هنا ليقوم المتصفح بتحديث الملفات
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
