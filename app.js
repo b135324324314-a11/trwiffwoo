@@ -393,14 +393,11 @@ function loadCustomerDetails(id) {
                 // هنا يجب أن نجلب البلوب من IndexedDB وننشئ رابط مؤقت للعرض
                 // للتبسيط سنعرض أيقونة "قيد الرفع" أو نحاول العرض
                  imagesHtml += `<div class="img-thumb-container" style="width:60px;height:60px;"><i class="fas fa-sync fa-spin" style="line-height:60px;width:100%;text-align:center;color:#aaa"></i></div>`;
-                 // ملاحظة: لعرض الصورة المخزنة في الـ DB Offline يحتاج كود إضافي غير متزامن داخل الـ render، 
-                 // لكن سنكتفي بعرض الصور المرفوعة أو الروابط المباشرة لعدم تعقيد الكود أكثر.
-                 // الحل السريع:
+                 // الحل السريع للعرض:
                  getImageLocally(url).then(blob => {
                      if(blob) {
                          const objUrl = URL.createObjectURL(blob);
                          // تحديث الصورة في الـ DOM بعد التحميل
-                         // هذا يتطلب معرفة العنصر.. سنتخطى هذا للجزء البسيط
                      }
                  });
             } else {
@@ -600,6 +597,7 @@ function executePrint() {
         </div>`;
     }
 
+    // تصميم الفاتورة للطباعة
     printArea.innerHTML = `
         <div class="invoice-header">
             <h2>وصل تسديد نقد</h2>
@@ -651,8 +649,10 @@ function executePrint() {
         </div>
     `;
 
-    window.print();
-    closePaymentModal();
+    setTimeout(() => {
+        window.print();
+        closePaymentModal();
+    }, 300);
 }
 
 // --- التعديل ---
